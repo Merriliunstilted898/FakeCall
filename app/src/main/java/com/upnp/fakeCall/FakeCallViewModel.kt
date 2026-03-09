@@ -26,7 +26,8 @@ data class FakeCallUiState(
     val isProviderEnabled: Boolean = false,
     val isTimerRunning: Boolean = false,
     val timerEndsAtMillis: Long = 0L,
-    val statusMessage: String = ""
+    val statusMessage: String = "",
+    val isRecordingEnabled: Boolean = true
 )
 
 class FakeCallViewModel(application: Application) : AndroidViewModel(application) {
@@ -42,7 +43,8 @@ class FakeCallViewModel(application: Application) : AndroidViewModel(application
             selectedDelaySeconds = prefs.getInt(KEY_DELAY_SECONDS, 10),
             selectedAudioUri = prefs.getString(KEY_AUDIO_URI, "").orEmpty(),
             selectedAudioName = prefs.getString(KEY_AUDIO_NAME, "Default").orEmpty(),
-            timerEndsAtMillis = prefs.getLong(KEY_TIMER_ENDS_AT, 0L)
+            timerEndsAtMillis = prefs.getLong(KEY_TIMER_ENDS_AT, 0L),
+            isRecordingEnabled = prefs.getBoolean(KEY_RECORDING_ENABLED, true)
         )
     )
     val uiState: StateFlow<FakeCallUiState> = _uiState.asStateFlow()
@@ -138,6 +140,17 @@ class FakeCallViewModel(application: Application) : AndroidViewModel(application
                 selectedAudioUri = "",
                 selectedAudioName = "Default",
                 statusMessage = "Disabling audio output on Call."
+            )
+        }
+    }
+
+
+    fun onRecordingEnabledChange(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_RECORDING_ENABLED, enabled).apply()
+        _uiState.update {
+            it.copy(
+                isRecordingEnabled = enabled,
+                statusMessage = if (enabled) "Call recording enabled." else "Call recording disabled."
             )
         }
     }
@@ -303,6 +316,7 @@ class FakeCallViewModel(application: Application) : AndroidViewModel(application
         private const val KEY_TIMER_ENDS_AT = "timer_ends_at"
         private const val KEY_AUDIO_URI = "audio_uri"
         private const val KEY_AUDIO_NAME = "audio_name"
+        private const val KEY_RECORDING_ENABLED = "recording_enabled"
 
         fun formatDelay(seconds: Int): String {
             return when {

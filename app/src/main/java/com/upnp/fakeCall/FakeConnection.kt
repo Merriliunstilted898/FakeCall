@@ -5,6 +5,7 @@ import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.MediaPlayer
+import android.media.MediaRecorder
 import android.net.Uri
 import android.os.Build
 import android.telecom.CallAudioState
@@ -12,6 +13,10 @@ import android.telecom.Connection
 import android.telecom.DisconnectCause
 import android.telecom.PhoneAccount
 import android.telecom.TelecomManager
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class FakeConnection(
     private val context: Context,
@@ -21,6 +26,7 @@ class FakeConnection(
 
     private var mediaPlayer: MediaPlayer? = null
     private var audioFocusRequest: AudioFocusRequest? = null
+    private var mediaRecorder: MediaRecorder? = null
     private val audioManager: AudioManager = context.getSystemService(AudioManager::class.java)
 
     init {
@@ -34,11 +40,12 @@ class FakeConnection(
     override fun onAnswer() {
         setActive()
         try {
-            setAudioRoute(CallAudioState.ROUTE_EARPIECE)
+            setAudioRoute(CallAudioState.ROUTE_SPEAKER)
         } catch (_: Throwable) {
             // Device or OEM may reject forced route changes.
         }
         startVoicePlayback()
+        maybeStartMicRecording()
     }
 
     override fun onReject() {
@@ -55,6 +62,7 @@ class FakeConnection(
 
     private fun disconnectWithCause(code: Int) {
         stopAndReleasePlayer()
+        stopAndReleaseRecording()
         setDisconnected(DisconnectCause(code))
         destroy()
     }
@@ -67,8 +75,8 @@ class FakeConnection(
         }
 
         val audioAttributes = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
             .build()
 
         val selectedUri = loadSelectedAudioUri()
@@ -77,13 +85,12 @@ class FakeConnection(
         val started = runCatching {
             val player = MediaPlayer().apply {
                 setAudioAttributes(audioAttributes)
-                @Suppress("DEPRECATION")
-                setAudioStreamType(AudioManager.STREAM_VOICE_CALL)
                 if (selectedUri != null) {
                     setDataSource(context, selectedUri)
                 } else {
                     setDataSource(context, rawFallbackUri)
                 }
+                isLooping = false
                 setOnCompletionListener {
                     stopAndReleasePlayer()
                 }
@@ -102,8 +109,6 @@ class FakeConnection(
             runCatching {
                 val player = MediaPlayer().apply {
                     setAudioAttributes(audioAttributes)
-                    @Suppress("DEPRECATION")
-                    setAudioStreamType(AudioManager.STREAM_VOICE_CALL)
                     setDataSource(context, rawFallbackUri)
                     setOnCompletionListener {
                         stopAndReleasePlayer()
@@ -124,6 +129,56 @@ class FakeConnection(
         }
     }
 
+    private fun maybeStartMicRecording() {
+        if (!isRecordingEnabled()) return
+
+        val outputFile = buildRecordingFile()
+        runCatching {
+            val recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                MediaRecorder(context)
+            } else {
+                @Suppress("DEPRECATION")
+                MediaRecorder()
+            }
+
+            recorder.apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setAudioEncodingBitRate(256_000)
+                setAudioSamplingRate(48_000)
+                setAudioChannels(1)
+                setOutputFile(outputFile.absolutePath)
+                prepare()
+                start()
+            }
+
+            mediaRecorder = recorder
+        }.onFailure {
+            stopAndReleaseRecording()
+        }
+    }
+
+    private fun buildRecordingFile(): File {
+        val recordingsDir = File(context.filesDir, "recordings").apply { mkdirs() }
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+        return File(recordingsDir, "fake_call_$timestamp.m4a")
+    }
+
+    private fun isRecordingEnabled(): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_RECORDING_ENABLED, true)
+    }
+
+    private fun stopAndReleaseRecording() {
+        mediaRecorder?.run {
+            runCatching { stop() }
+            runCatching { reset() }
+            runCatching { release() }
+        }
+        mediaRecorder = null
+    }
+
     private fun loadSelectedAudioUri(): Uri? {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val value = prefs.getString(KEY_AUDIO_URI, "").orEmpty()
@@ -136,8 +191,8 @@ class FakeConnection(
             val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
                 .setAudioAttributes(
                     AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                         .build()
                 )
                 .setOnAudioFocusChangeListener { }
@@ -148,7 +203,7 @@ class FakeConnection(
             @Suppress("DEPRECATION")
             audioManager.requestAudioFocus(
                 null,
-                AudioManager.STREAM_VOICE_CALL,
+                AudioManager.STREAM_MUSIC,
                 AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
             )
         }
@@ -183,5 +238,6 @@ class FakeConnection(
     companion object {
         private const val PREFS_NAME = "fake_call_prefs"
         private const val KEY_AUDIO_URI = "audio_uri"
+        private const val KEY_RECORDING_ENABLED = "recording_enabled"
     }
 }

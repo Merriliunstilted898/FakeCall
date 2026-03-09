@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -28,6 +29,7 @@ import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -154,6 +156,25 @@ fun SettingsScreen(
 
             Button(onClick = viewModel::clearAudioSelection) {
                 Text("No Audio File")
+            }
+
+            Text(
+                text = "Microphone Recording",
+                style = MaterialTheme.typography.titleLarge
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = if (state.isRecordingEnabled) "Enabled" else "Disabled",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Switch(
+                    checked = state.isRecordingEnabled,
+                    onCheckedChange = viewModel::onRecordingEnabledChange
+                )
             }
 
             if (state.statusMessage.isNotBlank()) {

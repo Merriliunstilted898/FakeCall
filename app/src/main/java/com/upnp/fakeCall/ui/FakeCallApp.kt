@@ -23,7 +23,8 @@ private const val ROUTE_SETTINGS = "settings"
 
 private val RequiredPermissions = arrayOf(
     Manifest.permission.READ_PHONE_STATE,
-    Manifest.permission.READ_PHONE_NUMBERS
+    Manifest.permission.READ_PHONE_NUMBERS,
+    Manifest.permission.RECORD_AUDIO
 )
 
 @Composable
