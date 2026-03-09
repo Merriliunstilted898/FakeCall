@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Intent
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.provider.DocumentsContract
 import android.telecom.TelecomManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -27,7 +28,8 @@ data class FakeCallUiState(
     val isTimerRunning: Boolean = false,
     val timerEndsAtMillis: Long = 0L,
     val statusMessage: String = "",
-    val isRecordingEnabled: Boolean = true
+    val isRecordingEnabled: Boolean = true,
+    val recordingsFolderName: String = "Downloads/FakeCall"
 )
 
 class FakeCallViewModel(application: Application) : AndroidViewModel(application) {
@@ -44,7 +46,8 @@ class FakeCallViewModel(application: Application) : AndroidViewModel(application
             selectedAudioUri = prefs.getString(KEY_AUDIO_URI, "").orEmpty(),
             selectedAudioName = prefs.getString(KEY_AUDIO_NAME, "Default").orEmpty(),
             timerEndsAtMillis = prefs.getLong(KEY_TIMER_ENDS_AT, 0L),
-            isRecordingEnabled = prefs.getBoolean(KEY_RECORDING_ENABLED, true)
+            isRecordingEnabled = prefs.getBoolean(KEY_RECORDING_ENABLED, true),
+            recordingsFolderName = prefs.getString(KEY_RECORDINGS_FOLDER_NAME, "Downloads/FakeCall").orEmpty()
         )
     )
     val uiState: StateFlow<FakeCallUiState> = _uiState.asStateFlow()
@@ -151,6 +154,48 @@ class FakeCallViewModel(application: Application) : AndroidViewModel(application
             it.copy(
                 isRecordingEnabled = enabled,
                 statusMessage = if (enabled) "Call recording enabled." else "Call recording disabled."
+            )
+        }
+    }
+
+    fun onRecordingFolderSelected(uri: Uri?) {
+        if (uri == null) return
+
+        val app = getApplication<Application>()
+        val resolver = app.contentResolver
+
+        runCatching {
+            resolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+        }
+
+        val folderName = runCatching { readableTreeLabel(uri) }.getOrDefault("Selected folder")
+
+        prefs.edit()
+            .putString(KEY_RECORDINGS_TREE_URI, uri.toString())
+            .putString(KEY_RECORDINGS_FOLDER_NAME, folderName)
+            .apply()
+
+        _uiState.update {
+            it.copy(
+                recordingsFolderName = folderName,
+                statusMessage = "Recording folder set to: $folderName"
+            )
+        }
+    }
+
+    fun clearRecordingFolderSelection() {
+        prefs.edit()
+            .remove(KEY_RECORDINGS_TREE_URI)
+            .putString(KEY_RECORDINGS_FOLDER_NAME, "Downloads/FakeCall")
+            .apply()
+
+        _uiState.update {
+            it.copy(
+                recordingsFolderName = "Downloads/FakeCall",
+                statusMessage = "Recording folder reset to Downloads/FakeCall."
             )
         }
     }
@@ -307,6 +352,17 @@ class FakeCallViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    private fun readableTreeLabel(uri: Uri): String {
+        val treeDocId = DocumentsContract.getTreeDocumentId(uri)
+        if (treeDocId.isBlank()) return "Selected folder"
+        val parts = treeDocId.split(':', limit = 2)
+        return when {
+            parts.size == 2 && parts[0] == "primary" && parts[1].isNotBlank() -> parts[1]
+            parts.size == 2 && parts[1].isNotBlank() -> parts[1]
+            else -> treeDocId
+        }
+    }
+
     companion object {
         private const val PREFS_NAME = "fake_call_prefs"
         private const val KEY_PROVIDER_NAME = "provider_name"
@@ -317,6 +373,8 @@ class FakeCallViewModel(application: Application) : AndroidViewModel(application
         private const val KEY_AUDIO_URI = "audio_uri"
         private const val KEY_AUDIO_NAME = "audio_name"
         private const val KEY_RECORDING_ENABLED = "recording_enabled"
+        private const val KEY_RECORDINGS_TREE_URI = "recordings_tree_uri"
+        private const val KEY_RECORDINGS_FOLDER_NAME = "recordings_folder_name"
 
         fun formatDelay(seconds: Int): String {
             return when {

@@ -1,10 +1,7 @@
 package com.upnp.fakeCall.ui.screens
 
-import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Context
-import android.content.pm.PackageManager
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -37,7 +34,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.upnp.fakeCall.FakeCallViewModel
 
@@ -52,17 +48,14 @@ fun SettingsScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     val audioPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         viewModel.onAudioFileSelected(uri)
     }
-
-    val legacyStoragePermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            audioPickerLauncher.launch("audio/*")
-        }
+    val recordingsFolderLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        viewModel.onRecordingFolderSelected(uri)
     }
 
     Scaffold(
@@ -145,11 +138,7 @@ fun SettingsScreen(
             )
 
             Button(onClick = {
-                if (needsLegacyStoragePermission(context)) {
-                    legacyStoragePermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
-                } else {
-                    audioPickerLauncher.launch("audio/*")
-                }
+                audioPickerLauncher.launch(arrayOf("audio/*"))
             }) {
                 Text("Select Audio File")
             }
@@ -162,6 +151,20 @@ fun SettingsScreen(
                 text = "Microphone Recording",
                 style = MaterialTheme.typography.titleLarge
             )
+
+            Text(
+                text = "Save to: ${state.recordingsFolderName}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Button(onClick = { recordingsFolderLauncher.launch(null) }) {
+                Text("Select Recording Folder")
+            }
+
+            Button(onClick = viewModel::clearRecordingFolderSelection) {
+                Text("Use Downloads/FakeCall")
+            }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -186,14 +189,6 @@ fun SettingsScreen(
             }
         }
     }
-}
-
-private fun needsLegacyStoragePermission(context: Context): Boolean {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) return false
-    return ContextCompat.checkSelfPermission(
-        context,
-        Manifest.permission.READ_EXTERNAL_STORAGE
-    ) != PackageManager.PERMISSION_GRANTED
 }
 
 private fun openCallingAccounts(context: Context, viewModel: FakeCallViewModel) {
